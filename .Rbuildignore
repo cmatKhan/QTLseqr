@@ -1,2 +1,5 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
+^LICENSE\.md$
+R/old_code
+temp

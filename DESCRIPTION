@@ -1,33 +1,43 @@
 Package: QTLseqr
 Type: Package
 Title: QTL mapping using Bulk Segregant Analysis of Next Generation Sequencing data.
-Version: 0.7.5.2
-Date: 12-3-2017
+Version: 2.0dev
+Date: 04-05-2024
 Authors@R: c(
     person("Ben Nathan", "Mansfeld", email = "mansfeld@msu.edu", role = c("aut", "cre")),
-    person("Rebecca", "Grumet", email = "grumet@msu.edu", role = c("ths"))
+    person("Rebecca", "Grumet", email = "grumet@msu.edu", role = c("ths")),
+    person("Chase", "Mateusiak", email= "chasem@wustl.edu", comment = c(ORCID = "0000-0002-2890-4242"), role = c("aut"))
     )
-BugReports: https://github.com/bmansfeld/QTLseqr/issues
 Description: QTLseqr performs QTL mapping using Bulk Segregant Analysis of Next Gen Sequencing data.
     The package is an R implementation of the analyses described in Magwene PM, Willis JH, Kelly JK (2011) The Statistics of Bulk Segregant Analysis Using Next Generation Sequencing. PLOS Computational Biology 7(11): e1002255. doi: 10.1371/journal.pcbi.1002255 and Takagi, H., Abe, A., Yoshida, K., Kosugi, S., Natsume, S., Mitsuoka, C., Uemura, A., Utsushi,H., Tamiru, M., Takuno, S., Innan, H., Cano, L. M., Kamoun, S. and Terauchi, R. (2013), QTL-seq: rapid mapping of quantitative trait loci in rice by whole genome resequencing of DNA from two bulked populations. *Plant J*, 74: 174–183. doi:10.1111/tpj.12105
-License: GPL-3
+License: GPL (>= 3)
 Encoding: UTF-8
-LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.1
+URL: https://github.com/bmansfeld/QTLseqr/
+BugReports: https://github.com/bmansfeld/QTLseqr/issues
 Imports:
-    modeest (>= 2.3.2),
-    ggplot2 (>= 2.2.0),
-    gtools,
-    dplyr,
-    readr,
-    tidyr,
-    Rcpp,
-    locfit
+    dplyr (>= 1.0.9),
+    locfit (>= 1.5.9.6),
+    magrittr (>= 2.0.3),
+    modeest (>= 2.4.0),
+    magrittr (>= 2.0.3),
+    modeest (>= 2.4.0),
+    purrr (>= 0.3.4),
+    qvalue (>= 2.32.0),
+    S4Vectors (>= 0.38.2),
+    SummarizedExperiment (>= 1.30.2),
+    stringr (>= 1.4.0)
 Suggests:
-    knitr,
-    rmarkdown,
-    kableExtra,
-    Yang2013data
-RoxygenNote: 6.1.1
-biocViews: Software, Sequencing, Visualization
+    knitr (>= 1.41),
+    mockery (>= 0.4.4),
+    rmarkdown (>= 2.18),
+    testthat (>= 3.2.1),
+    tibble (>= 3.1.8),
+    withr (>= 2.5.2)
 VignetteBuilder: knitr
-LinkingTo: Rcpp
+Depends: 
+    R (>= 2.10)
+LazyData: true
+Config/testthat/edition: 3
+biocViews: Software, Sequencing, Visualization

@@ -1,0 +1,43 @@
+---
+title: "Definition of Terms"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{term_definitions}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+# Introduction
+
+This vignette serves to define terms used in both the code and documentation of this package, and includes some discussion on terms that are commonly used in the Bulk Segregant Analysis (BSA) and Quantitative Trait Locus (QTL) literature which I chose to re-name in this package.
+
+## QTL-seq Terms
+
+The terms below are derived from [Takagi et al. (2013)][takagi2013]
+
+| Traditional Term          | Term Used in This Package  | Description/Notes                                                                                      |
+|---------------------------|----------------------------|--------------------------------------------------------------------------------------------------------|
+| Bulk (Low, High)          | `population_1`, `population_2`         | population refers to a group of samples pooled together for sequencing. Enter `?createComparisonFrame` in your console for more details.                                   |
+| SNP-Index                 | `alt_frequency`     | The ratio of the number of reads containing the alternate allele to the total number of reads at a SNP.|
+| $\Delta$(SNP-Index)       | `delta_alt_frequency` | The difference in alt allele frequency between `population_2` and `population_1`, i.e. `population_2_alt_frequency - population_1_alt_frequency`                                |
+
+[Takagi2013]: https://onlinelibrary.wiley.com/doi/10.1111/tpj.12105
+
+## BSA Statistics Terms
+
+The terms below are derived from [Magwene (2011)][magwene2011]
+
+| Traditional Term          | Term Used in This Package  | Description/Notes                                                                                      |
+|---------------------------|----------------------------|--------------------------------------------------------------------------------------------------------|
+| G          | G         | no change here -- I have no problem with this name                                   |
+| G'          | G smooth         | This will be some variation of `GSmooth` or `g_smooth` in the code. It is the result of local regression smoothing on the G metric |
+
+[magwene2011]: https://doi.org/10.1371/journal.pcbi.1002255
+
