@@ -11,25 +11,16 @@
 makeBSAExperimentFromGatkTable <- function(gatk_table_path,
                                            col_data_path,
                                            drop_samples = c(),
-                                           high_confidence_depth=10,
-                                           high_confidence_alt_percentage=.9,
-                                           keep_multiallelic=FALSE,
-                                           high_confidence_pl=NULL,
-                                           high_confidence_gq=NULL) {
+                                           metadata = list()) {
 
   .validate_makeBSAExperimentFromGatkTableInput(gatk_table_path,
                                                 col_data_path,
                                                 drop_samples,
-                                                high_confidence_depth,
-                                                high_confidence_alt_percentage,
-                                                keep_multiallelic,
-                                                high_confidence_pl,
-                                                high_confidence_gq)
+                                                metadata)
 
   # read in the GATK table data. Note that this includes validation
   # of the necessary columns used below
   parsed_data = .read_in_gatk_table(gatk_table_path,
-                                    keep_multiallelic,
                                     drop_samples)
 
   # read in the col data, if it is provided
@@ -55,11 +46,7 @@ makeBSAExperimentFromGatkTable <- function(gatk_table_path,
   }
 
   # create assay data list
-  assays = .create_assay_list(parsed_data,
-                              high_confidence_depth,
-                              high_confidence_alt_percentage,
-                              high_confidence_pl,
-                              high_confidence_gq)
+  assays = .create_assay_list(parsed_data)
 
   # create rowRanges from the coordinate and variant level information
   # note that the rownames on assays are set in the .create_assays_sample
@@ -79,27 +66,21 @@ makeBSAExperimentFromGatkTable <- function(gatk_table_path,
   rownames(col_data) = col_data$Sample
 
   # Create a new BSAExperiment object with the extracted data
-  BSAExperiment(assays = assays, rowRanges = row_ranges, colData = col_data)
+  BSAExperiment(assays = assays,
+                rowRanges = row_ranges,
+                colData = col_data,
+                metadata = metadata)
 }
 
 
+#' @importFrom stringr str_ends
 #' @keywords internal
 .validate_makeBSAExperimentFromGatkTableInput = function(gatk_table_path,
                                                          col_data_path,
                                                          drop_samples,
-                                                         high_confidence_depth,
-                                                         high_confidence_alt_percentage,
-                                                         keep_multiallelic,
-                                                         high_confidence_pl,
-                                                         high_confidence_gq) {
+                                                         metadata) {
 
   error_messages <- c() # Initialize an empty vector to store error messages
-
-  # validate .read_in_data arguments ----
-  if(!is.logical(keep_multiallelic)){
-    error_messages <- c(error_messages,
-                        "`keep_multiallelic` must be a boolean")
-  }
 
   if(!is.null(drop_samples) & !is.character(drop_samples)){
     error_messages <- c(error_messages,
@@ -116,29 +97,19 @@ makeBSAExperimentFromGatkTable <- function(gatk_table_path,
     error_messages <- c(error_messages,
                         sprintf("`col_data_path` %s does not exist", col_data_path))
   }
-  if(!is.null(col_data_path) && tools::file_ext(col_data_path) != 'csv'){
-    error_messages <- c(error_messages,
+
+  if(!is.null(col_data_path) &&
+     !(stringr::str_ends(tolower(col_data_path), ".csv") | stringr::str_ends(tolower(col_data_path), ".csv.gz"))) {
+    error_messages <-  c(error_messages,
                         paste0("`col_data_path` must be a csv file with ",
                                 sprintf("`.csv` as an extension. Verify that %s is a ", col_data_path),
                                 "csv and change the extension."))
   }
 
-  # validate assay related arguments ----
-  if(!is.numeric(high_confidence_depth) | high_confidence_depth < 0) {
+  # validate that the metadata is a list ----
+  if(!is.list(metadata)){
     error_messages <- c(error_messages,
-                        "`high_confidence_depth` must be a positive integer")
-  }
-  if(!is.numeric(high_confidence_alt_percentage) | high_confidence_alt_percentage < 0 | high_confidence_alt_percentage > 1) {
-    error_messages <- c(error_messages,
-                        "`high_confidence_alt_percentage` must be a number between 0 and 1")
-  }
-  if(!is.null(high_confidence_pl) && (!is.numeric(high_confidence_pl) | high_confidence_pl < 0)) {
-    error_messages <- c(error_messages,
-                        "`high_confidence_pl` must be a positive number or NULL")
-  }
-  if(!is.null(high_confidence_gq) && (!is.numeric(high_confidence_gq) | high_confidence_gq < 0)) {
-    error_messages <- c(error_messages,
-                        "`high_confidence_gq` must be a positive number or NULL")
+                        "`metadata` must be a list")
   }
 
   # If there are any error messages, stop and show all errors
@@ -153,7 +124,7 @@ makeBSAExperimentFromGatkTable <- function(gatk_table_path,
 #' It checks that the table contains the required columns and sample columns.
 #'
 #' @param gatk_table_path The path to the GATK table file.
-#' @param keep_multi_allelic A boolean indicating whether to keep multi-allelic
+#' @param keep_multiallelic A boolean indicating whether to keep multi-allelic
 #'   variants. Note: multi_allelic locations are not currently supported, so
 #'   don't bother setting this to TRUE for the time being. Default is FALSE.
 #' @param drop_samples A character vector of sample names to drop from the GATK
@@ -171,9 +142,8 @@ makeBSAExperimentFromGatkTable <- function(gatk_table_path,
 #'
 #' @keywords internal
 .read_in_gatk_table = function(gatk_table_path,
-                               keep_multiallelic = FALSE,
-                               drop_samples = c()){
-
+                               drop_samples = c(),
+                               keep_multiallelic = FALSE){
   if(keep_multiallelic == TRUE){
     error_messages <- c(error_messages,
                         "`keep_multiallelic` is not yet implemented. Please set to FALSE.")
@@ -194,10 +164,9 @@ makeBSAExperimentFromGatkTable <- function(gatk_table_path,
   }
 
   # confirm that at least the following columns are present in the sample
-  # columns; GT, AD, DP, PL, GQ. we can just grep for these specifically,
+  # columns; AD, DP, PL, GQ. we can just grep for these specifically,
   # if they exist at all, we can assume that the sample columns are present
-  if(!any(grepl("GT", colnames(gatk_table))) |
-     !any(grepl("AD", colnames(gatk_table))) |
+  if(!any(grepl("AD", colnames(gatk_table))) |
      !any(grepl("DP", colnames(gatk_table))) |
      !any(grepl("PL", colnames(gatk_table))) |
      !any(grepl("GQ", colnames(gatk_table)))){
@@ -246,37 +215,16 @@ makeBSAExperimentFromGatkTable <- function(gatk_table_path,
 #' @importFrom S4Vectors SimpleList
 #'
 #' @keywords internal
-.create_assay_list = function(parsed_data,
-                              high_confidence_depth,
-                              high_confidence_alt_percentage,
-                              high_confidence_pl,
-                              high_confidence_gq){
+.create_assay_list = function(parsed_data){
   # create a SimpleList object to store the assays
   assays <- S4Vectors::SimpleList()
   # the AD value is a comma separated string where the first value is the REF
   # depth and the second value is the ALT depth
-  assays$GT <- .parse_gt_table(as.matrix(parsed_data$table[, paste0(parsed_data$samples, ".GT")]),
-                               parsed_data$table$REF)
   assays$AD <- .parse_ad_table(as.matrix(parsed_data$table[, paste0(parsed_data$samples, ".AD")]))
   assays$DP <- as.matrix(parsed_data$table[, paste0(parsed_data$samples, ".DP")])
   assays$PL <- as.matrix(parsed_data$table[, paste0(parsed_data$samples, ".PL")])
   assays$GQ <- as.matrix(parsed_data$table[, paste0(parsed_data$samples, ".GQ")])
-  assays$alt_percentage <- assays$AD / assays$DP
-  # create a boolean matrix where the value is 1 if the depth is greater than
-  # 10 and the alt_percentage is greater than .9 or less than .1
-  # if high_confidence_pl and/or high_confidence_gq are provided, use those
-  # to label high confidence calls, also
-  assays$high_confidence <- (assays$DP >= high_confidence_depth) &
-    ((assays$alt_percentage >= high_confidence_alt_percentage) |
-       (assays$alt_percentage <= (1 - high_confidence_alt_percentage)))
-  if(is.numeric(high_confidence_pl)){
-    assays$high_confidence <- assays$high_confidence & (assays$PL <= high_confidence_pl)
-  }
-  if(is.numeric(high_confidence_gq)){
-    assays$high_confidence <- assays$high_confidence & (assays$GQ >= high_confidence_gq)
-  }
-  # replace any NA values in high_confidence with FALSE
-  assays$high_confidence[is.na(assays$high_confidence)] <- FALSE
+
 
   # set the colnames of all the assays to the sample names
   assays <- purrr::map(assays, function(x) {colnames(x) <- parsed_data$samples; return(x)})
@@ -346,40 +294,4 @@ makeBSAExperimentFromGatkTable <- function(gatk_table_path,
       )
     }
   )
-}
-
-#' Parse GT Table
-#'
-#' This function takes a data frame of GT data and a reference column,
-#' compares each GT value to the reference, and returns a numeric matrix
-#' where each element is 0 if the corresponding GT value is equal to the reference
-#' and 1 otherwise.
-#'
-#' @param gt_data A data frame of GT data.
-#' @param ref A character vector of reference values.
-#' @param chunk_size An integer which sets the
-#'
-#' @return A numeric matrix where each element is 0 if the corresponding GT value
-#' is equal to the reference and 1 otherwise.
-#'
-#' @importFrom purrr map
-# @importFrom dplyr bind_cols
-#'
-#' @examples
-#' gt_data <- data.frame(sample1 = c("A", "G", "C", "T", "A"),
-#'                       sample2 = c("G", "A", "C", "T", "G"))
-#' ref <- c("A", "G", "C", "T", "A")
-#' .parse_gt_table(gt_data, ref)
-#'
-#' @keywords internal
-.parse_gt_table <- function(gt_data, ref){
-  # Iterate over columns in gt_data
-  result_list <- purrr:::map(colnames(gt_data), function(col_name) {
-    ifelse(gt_data[, col_name] == "./.", NA_integer_,
-           ifelse(gt_data[, col_name] == ref, 0L, 1L))
-  })
-
-  # Store the result as a list, then use dplyr::bind_cols() %>% as.matrix
-  names(result_list) = colnames(gt_data)
-  dplyr::bind_cols(result_list) %>% as.matrix()
 }

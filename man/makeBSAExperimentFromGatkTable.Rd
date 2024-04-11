@@ -8,11 +8,7 @@ makeBSAExperimentFromGatkTable(
   gatk_table_path,
   col_data_path,
   drop_samples = c(),
-  high_confidence_depth = 10,
-  high_confidence_alt_percentage = 0.9,
-  keep_multiallelic = FALSE,
-  high_confidence_pl = NULL,
-  high_confidence_gq = NULL
+  metadata = list()
 )
 }
 \description{

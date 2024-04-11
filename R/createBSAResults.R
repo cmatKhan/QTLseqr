@@ -3,6 +3,7 @@
 #' (i.e. QTL) based on Hampel's rule. An alternate method for filtering out
 #' QTL is proposed using absolute delta SNP indeces greater than
 #' a set threshold to filter out potential QTL. An estimation of the mode of the trimmed set
+#' @export
 createBSAResults <- function(comparison_index,
                              bsae,
                              filter_method,
@@ -10,6 +11,8 @@ createBSAResults <- function(comparison_index,
                              delta_alt_frequency_filter = 0.1,
                              hampel_threshold_multiplier = 5.2,
                              ...) {
+
+  args_list = list(...)
 
   .validateCreateBSAResultsArgs(list(comparison_index = comparison_index,
                                      bsae = bsae,
@@ -31,6 +34,29 @@ createBSAResults <- function(comparison_index,
   )
   # a vector where the entry is TRUE if the original value IS AN OUTLIER
   delta_alt_frequency_filter_vector <- abs(delta_alt_frequency) >= abs(delta_alt_frequency_filter)
+
+  if("depth_vector" %in% names(args_list)){
+    message(paste0("The `depth_vector` passed in the `...` ",
+                   "arguments is being overwritten. ",
+                   "There is no need to pass `depth_vector` explicitely"))
+  }
+
+  min_depth_vector = pmin(assays(bsae[, population_1_sample])$DP,
+                          assays(bsae[, population_2_sample])$DP)
+
+  delta_alt_frequency_ci = simulateDeltaAltFrequencyCI(
+    population_1_n = bsae@metadata$population_1_n,
+    population_2_n = bsae@metadata$population_2_n,
+    population_structure = bsae@metadata$population_structure,
+    depth_vector = min(min_depth_vector, na.rm=TRUE):max(min_depth_vector, na.rm=TRUE)
+  )
+
+  delta_alt_frequency_results_df = dplyr::tibble(
+    min_depth = as.vector(min_depth_vector),
+    delta_alt_frequency = as.vector(delta_alt_frequency),
+    delta_alt_frequency_smoothed = as.vector(delta_alt_frequency_smoothed)
+  ) %>%
+    dplyr::left_join(delta_alt_frequency_ci, by = c('min_depth' = 'depth'))
 
   # calculate G statistics
   g_stats <- calculateGStatistic(population_depths)
@@ -81,18 +107,21 @@ createBSAResults <- function(comparison_index,
     analysis_params$hampel_threshold_multiplier <- hampel_threshold_multiplier
   }
 
+  g_results_df = data.frame(
+    g = g_stats,
+    g_smooth = g_smoothed,
+    filter = filter_vector,
+    pvalue = g_smoothed_pvalues,
+    bh_adj_pvalue = bh_adj_pvalues,
+    qvalue = qvalues
+  )
+
+  res_df = dplyr::bind_cols(delta_alt_frequency_results_df, g_results_df) %>%
+    as.data.frame()
+
   # Create and return BSAResults object
   new("BSAResults",
-    data.frame(
-      delta_alt_frequency = delta_alt_frequency,
-      delta_alt_frequency_smoothed = delta_alt_frequency_smoothed,
-      g = g_stats,
-      g_smooth = g_smoothed,
-      filter = filter_vector,
-      pvalue = g_smoothed_pvalues,
-      bh_adj_pvalue = bh_adj_pvalues,
-      qvalue = qvalues
-    ),
+    res_df,
     rowRanges = rowRanges(bsae),
     analysisParams = analysis_params
   )

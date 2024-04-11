@@ -6,26 +6,26 @@
 \usage{
 simulateDeltaAltFrequencyCI(
   population_1_n,
+  population_structure,
   population_2_n = population_1_n,
-  population_structure = "F2",
   depth_vector = 1:100,
   replications = 10000,
   alt_frequency_filter = 0.3,
-  intervals = c(0.05, 0.025)
+  ci_lower_bounds = c(0.05, 0.025)
 )
 }
 \arguments{
 \item{population_1_n}{A positive integer specifying the number of
 individuals in the first bulk.}
 
-\item{population_2_n}{A positive integer specifying the number of
-individuals in the second bulk. Defaults to the same number as
-\code{population_1_n}.}
-
 \item{population_structure}{A string indicating the population structure of
 the individuals. Valid options are 'F2' for an F2 population and 'RIL' for
 Recombinant Inbred Lines. This parameter influences how alternate allele
 frequencies are simulated.}
+
+\item{population_2_n}{A positive integer specifying the number of
+individuals in the second bulk. Defaults to the same number as
+\code{population_1_n}.}
 
 \item{replications}{An integer specifying the number of bootstrap
 replications to perform. This affects the robustness and accuracy of the
@@ -35,11 +35,10 @@ simulated confidence intervals. Defaults to 10000.}
 allele frequency filter threshold. Used to exclude low alt allele
 frequency values from the simulation. Defaults to 0.3.}
 
-\item{intervals}{A numeric vector of probabilities with values in \link{0,1},
+\item{ci_lower_bounds}{A numeric vector of probabilities with values in \link{0,0.5},
 specifying the confidence levels for which to calculate confidence
-intervals. For example, c(0.05, 0.95) corresponds to the 95\% confidence
-interval. Defaults to c(0.05, 0.025), which corresponds to 95\% and 97.5\%
-confidence intervals.}
+intervals. For example, c(0.05, 0.025) corresponds to the 95\% and 97.5\%
+confidence intervals. Defaults to c(0.05, 0.025).}
 
 \item{depth}{An integer vector specifying the read depths at which to
 simulate alternate allele frequency calls. Defaults to a sequence from
@@ -66,9 +65,9 @@ interval estimates.
 simulateDeltaAltFrequencyCI(
   population_1_n = 50,
   population_structure = "F2",
-  depth = c(10, 20, 30),
-  replications = 1000,
+  depth = 1:10,
+  replications = 100,
   filter = 0.3,
-  intervals = c(0.05, 0.95)
+  intervals = c(0.05, 0.025)
 )
 }

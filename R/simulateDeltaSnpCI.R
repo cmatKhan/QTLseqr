@@ -27,11 +27,10 @@
 #' @param alt_frequency_filter A numeric value specifying the minimum alt
 #'   allele frequency filter threshold. Used to exclude low alt allele
 #'   frequency values from the simulation. Defaults to 0.3.
-#' @param intervals A numeric vector of probabilities with values in [0,1],
+#' @param ci_lower_bounds A numeric vector of probabilities with values in [0,0.5],
 #'   specifying the confidence levels for which to calculate confidence
-#'   intervals. For example, c(0.05, 0.95) corresponds to the 95% confidence
-#'   interval. Defaults to c(0.05, 0.025), which corresponds to 95% and 97.5%
-#'   confidence intervals.
+#'   intervals. For example, c(0.05, 0.025) corresponds to the 95% and 97.5%
+#'   confidence intervals. Defaults to c(0.05, 0.025).
 #'
 #' @return A data frame with each row representing a specified depth and each
 #'   column representing a \eqn{\Delta}{Delta}(Alt Allele Frequency) threshold for the
@@ -39,29 +38,46 @@
 #'   specifies the depth, and subsequent columns are named according to the
 #'   specified confidence intervals.
 #'
+#' @importFrom stringr str_remove
+#'
 #' @examples
 #' simulateDeltaAltFrequencyCI(
 #'   population_1_n = 50,
 #'   population_structure = "F2",
-#'   depth = c(10, 20, 30),
-#'   replications = 1000,
+#'   depth = 1:10,
+#'   replications = 100,
 #'   filter = 0.3,
-#'   intervals = c(0.05, 0.95)
+#'   intervals = c(0.05, 0.025)
 #' )
 #' @export
 simulateDeltaAltFrequencyCI <- function(population_1_n,
+                                        population_structure,
                                         population_2_n = population_1_n,
-                                        population_structure = "F2",
                                         depth_vector = 1:100,
                                         replications = 10000,
                                         alt_frequency_filter = 0.3,
-                                        intervals = c(0.05, 0.025)) {
+                                        ci_lower_bounds = c(0.05, 0.025)) {
   validatePositiveInteger(population_1_n, "population_1_n")
   validatePositiveInteger(population_2_n, "population_2_n")
 
   # if population_structure is not one of F2 or RIL, throw an error
   if (!population_structure %in% c("F2", "RIL")) {
     stop("population_structure must be either 'F2' or 'RIL'")
+  }
+
+    # Ensure valid input for lower bounds
+  if (any(ci_lower_bounds <= 0 | ci_lower_bounds >= 0.5)) {
+    stop("Lower bounds must be in the range (0, 0.5)")
+  }
+
+  # ensure sorting is from largest to smallest
+  ci_lower_bounds <- sort(ci_lower_bounds, decreasing = TRUE)
+
+  intervals = vector('numeric', length(ci_lower_bounds)*2)
+  # iterate over only even indicies
+  for (i in seq_along(ci_lower_bounds)){
+    intervals[2*i-1] = ci_lower_bounds[i]
+    intervals[2*i] = 1-ci_lower_bounds[i]
   }
 
   # Simulate allele frequencies for each population
@@ -110,13 +126,13 @@ simulateDeltaAltFrequencyCI <- function(population_1_n,
 
     # from the sample of delta alt allele frequencies, calculate the
     # quantiles for the specified intervals
-    quantile(delta_alt_frequency_simulation, probs = intervals)
+    quantile(delta_alt_frequency_simulation, probs = intervals, na.rm=TRUE)
   })
 
   # Convert list to a data frame
   CI_df <- do.call(rbind, CI_list)
   CI_df <- data.frame(CI_df)
-  names(CI_df) <- paste0("CI_", 100 - (intervals * 200))
+  names(CI_df) <- paste0('CI_', stringr::str_remove(intervals, '0\\.'))
   CI_df$depth = depth_vector
 
   CI_df

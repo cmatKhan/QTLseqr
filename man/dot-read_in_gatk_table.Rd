@@ -6,8 +6,8 @@
 \usage{
 .read_in_gatk_table(
   gatk_table_path,
-  keep_multiallelic = FALSE,
-  drop_samples = c()
+  drop_samples = c(),
+  keep_multiallelic = FALSE
 )
 }
 \arguments{
@@ -16,7 +16,7 @@
 \item{drop_samples}{A character vector of sample names to drop from the GATK
 table. Default is an empty character vector.}
 
-\item{keep_multi_allelic}{A boolean indicating whether to keep multi-allelic
+\item{keep_multiallelic}{A boolean indicating whether to keep multi-allelic
 variants. Note: multi_allelic locations are not currently supported, so
 don't bother setting this to TRUE for the time being. Default is FALSE.}
 }

@@ -5,11 +5,7 @@ test_that("test .validate_makeBSAExperimentFromGatkTable valid input", {
     gatk_table_path = "path/to/nonexistent_gatk_table.txt",
     col_data_path = "path/to/nonexistent_col_data.csv",
     drop_samples = NULL,
-    high_confidence_depth = 10,
-    high_confidence_alt_percentage = 0.9,
-    keep_multiallelic = FALSE,
-    high_confidence_pl = NULL,
-    high_confidence_gq = NULL
+    metadata = list()
   ))
 })
 
@@ -21,23 +17,14 @@ test_that("test .validate_makeBSAExperimentFromGatkTable error conditions", {
       gatk_table_path = "nonexistent_gatk_table.txt", # Invalid because it does not exist
       col_data_path = "nonexistent_col_data.txt", # Invalid because it does not exist and wrong extension
       drop_samples = 123, # Invalid because it's not a character vector or NULL
-      high_confidence_depth = -10, # Invalid because it's negative
-      high_confidence_alt_percentage = 1.5, # Invalid because it's outside the 0 to 1 range
-      keep_multiallelic = "yes", # Invalid because it's not a boolean
-      high_confidence_pl = -5, # Invalid because it's negative
-      high_confidence_gq = "high" # Invalid because it's not numeric
+      metadata = list()
     ),
     # Check for a comprehensive error message containing all validation issues
     paste(
-      "`keep_multiallelic` must be a boolean",
       "`drop_samples` must be a character vector or NULL",
       "`gatk_table_path` nonexistent_gatk_table.txt does not exist",
-      "`col_data_path` nonexistent_col_data.txt does not exist",
+      "`col_data_path` nonexistent_col_data.txt does not exist" ,
       "`col_data_path` must be a csv file with `.csv` as an extension. Verify that nonexistent_col_data.txt is a csv and change the extension.",
-      "`high_confidence_depth` must be a positive integer",
-      "`high_confidence_alt_percentage` must be a number between 0 and 1",
-      "`high_confidence_pl` must be a positive number or NULL",
-      "`high_confidence_gq` must be a positive number or NULL",
       sep = "\n"
     )
   )
@@ -73,25 +60,6 @@ test_that("test .read_in_gatk_table function", {
   expect_false("C8.AD" %in% colnames(result_with_drop$table))
 })
 
-test_that("parse_gt_table returns correct output", {
-  # Define the input data frame and reference vector
-  gt_data <- data.frame(sample1 = c("A", "G", "C", "T", "A"),
-                        sample2 = c("G", "A", "C", "T", "G"))
-  ref <- c("A", "G", "C", "T", "A")
-
-  # Call the function
-  result <- .parse_gt_table(gt_data, ref)
-
-  # Check that the result is a matrix with the correct dimensions
-  expect_true(is.matrix(result))
-  expect_equal(dim(result), c(length(ref), ncol(gt_data)))
-
-  # Check that the result has the correct values
-  expected_result <- matrix(c(0, 0, 0, 0, 0, 1, 1, 0, 0, 1), nrow = length(ref))
-  colnames(expected_result) = colnames(gt_data)
-  expect_equal(result, expected_result)
-})
-
 test_that("parse_ad_table returns correct output", {
 
   ad_data = matrix(c("1,149","3,159","1,147","10,95","0,23",
@@ -121,17 +89,24 @@ test_that("test makeBSAExperimentFromGatkTable constructs an appropriate BSAExpe
   expected_chromosomes <- c("CP022321.1")
   expected_positions <- c(222, 558, 1443, 10528, 12097)
 
-  # Execute function
+  file_paths = bsa_file_fixtures()
+  gatk_table_path = file_paths$gatk_table
+  coldata_path = file_paths$coldata
+
+  expected_samples <- c("SLB0021", "SLB0025")
+  expected_chromosomes <- c("CP022321.1")
+  expected_positions <- c(222, 558, 1443, 10528, 12097)
+
+
+  # Perform the operation and store result in the container
   result <- makeBSAExperimentFromGatkTable(
     gatk_table_path = gatk_table_path,
     col_data_path = coldata_path,
     drop_samples = c('KN99a', 'C8'),
-    high_confidence_depth = 10,
-    high_confidence_alt_percentage = 0.9,
-    keep_multiallelic = FALSE,
-    high_confidence_pl = NULL,
-    high_confidence_gq = NULL
-  )
+    metadata = list(
+      population_1_n = 200,
+      population_2_n = 100,
+      population_structure = 'RIL'))
 
   # Test if the result is a BSAExperiment object
   expect_true(inherits(result, "BSAExperiment"))
@@ -144,5 +119,10 @@ test_that("test makeBSAExperimentFromGatkTable constructs an appropriate BSAExpe
   # Validate samples in colData
   col_data <- colData(result)
   expect_equal(col_data$sample, expected_samples)
+
+  # Validate metadata
+  expect_equal(result@metadata$population_1_n, 200)
+  expect_equal(result@metadata$population_2_n, 100)
+  expect_equal(result@metadata$population_structure, 'RIL')
 
 })

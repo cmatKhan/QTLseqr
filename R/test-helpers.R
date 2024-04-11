@@ -61,11 +61,11 @@ bsae_obj_fixture = function(add_comparisons = FALSE){
     gatk_table_path = paths$gatk_table,
     col_data_path = paths$coldata,
     drop_samples = c('KN99a', 'C8'),
-    high_confidence_depth = 10,
-    high_confidence_alt_percentage = 0.9,
-    keep_multiallelic = FALSE,
-    high_confidence_pl = NULL,
-    high_confidence_gq = NULL
+    metadata = list(
+      population_1_n = 200,
+      population_2_n = 200,
+      population_structure = "RIL"
+    )
   )
 
   if(add_comparisons){

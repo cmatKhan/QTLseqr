@@ -1,0 +1,72 @@
+---
+title: "Yang_et_al_2013"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Yang_et_al_2013}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(QTLseqr)
+```
+
+# Introduction
+
+This data is derived from: Mapping of Quantitative Trait Loci Underlying Cold Tolerance in Rice Seedlings via High-Throughput Sequencing of Pooled Extremes. Yang Z, Huang D, Tang W, Zheng Y, Liang K, et al. (**2013**) PLOS ONE 8(7): e68433. <https://doi.org/10.1371/journal.pone.0068433>
+
+Raw reads were downloaded from the NCBI Short Read Archive, aligned to the v7 Nipponbare genome (<http://rice.plantbiology.msu.edu/>) and SNPs were called as described in the GATK “Best Practices” (<https://software.broadinstitute.org/gatk/best-practices/>).
+
+*NOTE*: This data was downloaded from [here](https://github.com/bmansfeld/Yang2013data), but 
+then subsetted down to only `Chr1`, and 7 rows with multi-allelic depth information
+where removed. The columns `MULTI-ALLELIC = 'false'` AND `TYPE = 'snp'` were added. These
+are required for the `QTLseqr 2.0`, see `?makeBSAExperimentFromGatkTable`. I also
+removed record where the DP was 0 in either the low or high bulk.
+
+```{r}
+gatk_table_file <- system.file("extdata",
+                          "Yang_et_al_2013_chr1.table.gz",
+                          package = "QTLseqr",
+                          mustWork = TRUE)
+coldata_file <- system.file("extdata",
+                          "Yang_et_al_2013_coldata.csv.gz",
+                          package = "QTLseqr",
+                          mustWork = TRUE)
+```
+
+
+```{r}
+bsae = makeBSAExperimentFromGatkTable(
+  gatk_table_path = gatk_table_file,
+  col_data_path = coldata_file,
+  metadata = list(
+    population_1_n = 25,
+    population_2_n = 25,
+    population_structure = "F2"))
+
+bsae@comparisons <- S4Vectors::DataFrame(population_1 = 'SRR834927',
+                                         population_2 = 'SRR834931')
+```
+
+```{r}
+bsae_results = createBSAResults(
+  comparison_index = 1L,
+  bsae = bsae,
+  filter_method = "alt_frequency",
+  window_size = 1e6,
+  delta_alt_frequency_filter = 0.1,
+  hampel_threshold_multiplier = 5.2
+)
+```
+
+```{r}
+
+```
+

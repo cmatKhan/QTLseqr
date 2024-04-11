@@ -1,7 +1,7 @@
 Package: QTLseqr
 Type: Package
 Title: QTL mapping using Bulk Segregant Analysis of Next Generation Sequencing data.
-Version: 2.0dev
+Version: 2.0
 Date: 04-05-2024
 Authors@R: c(
     person("Ben Nathan", "Mansfeld", email = "mansfeld@msu.edu", role = c("aut", "cre")),
@@ -19,7 +19,6 @@ BugReports: https://github.com/bmansfeld/QTLseqr/issues
 Imports:
     dplyr (>= 1.0.9),
     locfit (>= 1.5.9.6),
-    magrittr (>= 2.0.3),
     modeest (>= 2.4.0),
     magrittr (>= 2.0.3),
     modeest (>= 2.4.0),

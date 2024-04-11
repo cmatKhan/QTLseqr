@@ -1,12 +1,31 @@
 test_that("BSAExperiment constructor works with empty data", {
-  # Call BSAExperiment() and expect a warning
-  expect_warning(emptyResult <- BSAExperiment(), "`assays` is null")
+  warningsCaught <- character() # Vector to store warnings
 
-  # Now check that the object is of the correct class
+  # Custom warning handler to capture all warnings
+  withCallingHandlers({
+    emptyResult <- BSAExperiment()
+  }, warning = function(w) {
+    warningsCaught <<- c(warningsCaught, w$message) # Append warning message
+    invokeRestart("muffleWarning") # Prevent the warning from being printed
+  })
+
+  # Now check that all expected warnings are present
+  expectedWarnings <- c(
+    "setting `population_2_n` to `population_1_n` value",
+    "`assays` is null"
+  )
+
+  for (expectedWarning in expectedWarnings) {
+    expect_true(expectedWarning %in% warningsCaught,
+                info = paste("Expected warning not found:", expectedWarning))
+  }
+
+  # Check that the object is of the correct class
   expect_true(inherits(emptyResult, "BSAExperiment"),
-    info = "Object should be a BSAExperiment instance."
+              info = "Object should be a BSAExperiment instance."
   )
 })
+
 
 
 test_that("BSAResults constructor works with empty data", {
@@ -17,6 +36,13 @@ test_that("BSAResults constructor works with empty data", {
   expect_true(inherits(emptyResult, "BSAResults"),
     info = "Object should be a BSAResults instance."
   )
+})
+
+test_that("BSAResults cosntructor works with test data", {
+
+  bsae = bsae_obj_fixture()
+
+  expect_snapshot(bsae)
 })
 
 # Test that a DepthList object is successfully created with valid input

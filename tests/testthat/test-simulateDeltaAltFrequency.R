@@ -26,13 +26,13 @@ test_that("simulateDeltaAltFrequencyCI returns correct structure", {
     population_1_n = 10,
     population_2_n = 10,
     population_structure = "F2",
-    depth_vector = c(10, 20),
+    depth_vector = 1:10,
     replications = 100,
     alt_frequency_filter = 0.3,
-    intervals = c(0.05, 0.95)
+    ci_lower_bounds = c(0.05, 0.025)
   )
 
   expect_true(is.data.frame(result))
-  expect_equal(ncol(result), length(c(0.05, 0.95)) + 1)
-  expect_equal(nrow(result), length(c(10, 20)))
+  expect_equal(ncol(result), 5)
+  expect_equal(nrow(result), 10)
 })

@@ -2,21 +2,21 @@
 % Please edit documentation in R/smoothAlleleFrequencyMetric.R
 \name{smoothAlleleFrequencyMetric}
 \alias{smoothAlleleFrequencyMetric}
-\title{Calculate tricube weighted statistics for each SNP}
+\title{Calculate tricube weighted statistics for each allele}
 \usage{
-smoothAlleleFrequencyMetric(snp_row_ranges, stat, window_size = 2e+06, ...)
+smoothAlleleFrequencyMetric(allele_row_ranges, stat, window_size = 2e+06, ...)
 }
 \arguments{
-\item{snp_row_ranges}{A GRangesList object where each record represents
-The genomic coordinate of a SNP}
+\item{allele_row_ranges}{A GRangesList object where each record represents
+The genomic coordinate of a allele}
 
-\item{stat}{A vector of statistics calculated from the SNPs. This might be
+\item{stat}{A vector of statistics calculated from the alleles. This might be
 the G statistic, see \code{\link{calculateGStatistic}} or
 the alt_frequency from \code{\link{populationDepths}}, for example.
 The order of this vector must correspond with the order of the
-snp_row_ranges object.}
+allele_row_ranges object.}
 
-\item{window_size}{the window size (in base pairs) bracketing each SNP for which
+\item{window_size}{the window size (in base pairs) bracketing each allele for which
 to calculate the statitics. Magwene et. al recommend a window size of ~25
 cM, but also recommend optionally trying several window sizes to test if
 peaks are over- or undersmoothed.}
@@ -32,11 +32,11 @@ smoothing kernel
 }
 \description{
 Uses local regression (wrapper for \code{\link[locfit]{locfit}}) to predict a
-tricube smoothed version of the statistic supplied for each SNP. This works as a
-weighted average across neighboring SNPs that accounts for Linkage
-disequilibrium (LD) while minizing noise attributed to SNP calling errors.
-Values for neighboring SNPs within the window are weighted by physical
-distance from the focal SNP.
+tricube smoothed version of the statistic supplied for each allele. This works as a
+weighted average across neighboring alleles that accounts for Linkage
+disequilibrium (LD) while minizing noise attributed to allele calling errors.
+Values for neighboring alleles within the window are weighted by physical
+distance from the focal allele.
 }
 \seealso{
 \code{\link{getG}} for G statistic calculation

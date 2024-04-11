@@ -1,0 +1,57 @@
+---
+title: "recombination_analysis"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{recombination_analysis}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(QTLseqr)
+library(tidyverse)
+library(here)
+```
+
+```{r}
+c8_df = read_csv(here("temp/c8_variants.csv"))
+
+gatk_table_path = "/mnt/scratch/genotype_check/run_24_wgs_results/output.table"
+
+col_data_path = here("temp/run_24_coldata.csv")
+
+bsae = QTLseqr::makeBSAExperimentFromGatkTable(
+  gatk_table_path,
+  col_data_path,
+  drop_samples = c('C8', 'KN99a')
+)
+
+SummarizedExperiment::rowRanges(bsae)$c8 = SummarizedExperiment::rowRanges(bsae) %>%
+  as_tibble() %>%
+  left_join(c8_df %>%
+              filter(parent_genotype_strict==1) %>%
+              select(CHR,POS, ALT1, c8),
+            by = c('seqnames'='CHR', 'start'='POS', 'alt'='ALT1')) %>%
+  tidyr::replace_na(list(c8=FALSE)) %>%
+  pull(c8)
+saveRDS(bsae, here("temp/bsae_run_24_wgs.rds"))
+```
+
+```{r}
+chr1_sample1 = bsae[SummarizedExperiment::seqnames(bsae)==SummarizedExperiment::seqnames(bsae)[1], bsae@colData$sample[1]]
+
+alt_freq = SummarizedExperiment::assays(chr1_sample1)$AD / SummarizedExperiment::assays(chr1_sample1)$DP
+
+na_free_alt_freq = na.omit(as.vector(alt_freq))
+
+bp = changepoint.np::cpt.np()
+```
+
+

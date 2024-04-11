@@ -87,7 +87,7 @@ setReplaceMethod("comparisons", "BSAExperiment", function(object, value) {
 #'
 #' @rdname BSAExperiment-methods
 #'
-#' @importFrom dplyr setdiff group_by group_split pull filter distinct mutate rename
+#' @importFrom dplyr setdiff group_by group_split pull filter distinct mutate rename as_tibble
 #' @importFrom rlang sym
 #' @importFrom purrr map
 #' @importFrom S4Vectors DataFrame
@@ -104,7 +104,7 @@ setMethod(
            var2_name = "population_2",
            base_cond_in_each_group = TRUE) {
     df <- colData(object) %>%
-      as_tibble()
+      dplyr::as_tibble()
 
     # check colnames of dataframe against expected colnames
     expected_colnames <- c(grouping_variable, population_variable, "sample")
