@@ -18,40 +18,166 @@ knitr::opts_chunk$set(
 library(QTLseqr)
 library(tidyverse)
 library(here)
+library(BSgenome.CneoformansVarGrubiiKN99.NCBI.ASM221672v1)
+
+kn99_genome = BSgenome.CneoformansVarGrubiiKN99.NCBI.ASM221672v1
 ```
 
 ```{r}
 c8_df = read_csv(here("temp/c8_variants.csv"))
 
-gatk_table_path = "/mnt/scratch/genotype_check/run_24_wgs_results/output.table"
+gatk_table_path = here("temp/output.table")
 
 col_data_path = here("temp/run_24_coldata.csv")
 
-bsae = QTLseqr::makeBSAExperimentFromGatkTable(
-  gatk_table_path,
-  col_data_path,
-  drop_samples = c('C8', 'KN99a')
-)
+bsae = readRDS(here("temp/bsae_run_24_wgs.rds"))
 
-SummarizedExperiment::rowRanges(bsae)$c8 = SummarizedExperiment::rowRanges(bsae) %>%
-  as_tibble() %>%
-  left_join(c8_df %>%
-              filter(parent_genotype_strict==1) %>%
-              select(CHR,POS, ALT1, c8),
-            by = c('seqnames'='CHR', 'start'='POS', 'alt'='ALT1')) %>%
-  tidyr::replace_na(list(c8=FALSE)) %>%
-  pull(c8)
-saveRDS(bsae, here("temp/bsae_run_24_wgs.rds"))
+bsae = bsae[,startsWith(bsae@colData$sample, 'TH')]
+
+# bsae = QTLseqr::makeBSAExperimentFromGatkTable(
+#   gatk_table_path,
+#   col_data_path,
+#   drop_samples = c('C8', 'KN99a')
+# )
+# 
+# SummarizedExperiment::rowRanges(bsae)$c8 = SummarizedExperiment::rowRanges(bsae) %>%
+#   as_tibble() %>%
+#   left_join(c8_df %>%
+#               filter(parent_genotype_strict==1) %>%
+#               select(CHR,POS, ALT1, c8),
+#             by = c('seqnames'='CHR', 'start'='POS', 'alt'='ALT1')) %>%
+#   tidyr::replace_na(list(c8=FALSE)) %>%
+#   pull(c8)
+# saveRDS(bsae, here("temp/bsae_run_24_wgs.rds"))
 ```
 
 ```{r}
-chr1_sample1 = bsae[SummarizedExperiment::seqnames(bsae)==SummarizedExperiment::seqnames(bsae)[1], bsae@colData$sample[1]]
+get_mode <- function(v) {
+  uniqv <- unique(na.omit(v))
+  uniqv[which.max(tabulate(match(v, uniqv)))]
+}
 
-alt_freq = SummarizedExperiment::assays(chr1_sample1)$AD / SummarizedExperiment::assays(chr1_sample1)$DP
+# Function to determine if a point is noisy based on a larger neighborhood
+is_noisy <- function(freq_vector, index, neighborhood_size) {
+  # Define the window range, respecting the vector boundaries
+  window_start <- max(1, index - neighborhood_size)
+  window_end <- min(length(freq_vector), index + neighborhood_size)
+  window <- freq_vector[window_start:window_end]
 
-na_free_alt_freq = na.omit(as.vector(alt_freq))
+  # Calculate the mode of the window
+  window_mode <- get_mode(window) #modeest::mlv(window, bw = 0.5, method = 'hsm')[1]
+  
+  # Compare the point to the window's mode
+  return(freq_vector[index] != window_mode)
+}
 
-bp = changepoint.np::cpt.np()
+extract_alt_freq_dataframe = function(sample,
+                                      ref_freq_thres = 0.2,
+                                      hetero_freq_thres = c(0.3, 0.7),
+                                      alt_freq_thres = 0.8,
+                                      neighborhood_size = 20,
+                                      verbose = FALSE){
+  message('working on sample: ', sample)
+  
+  map(as.character(SummarizedExperiment::seqnames(bsae)@values[1:14]), ~{
+    if(verbose) message(' chromosome: ', .)
+    chr_sample_subset = bsae[SummarizedExperiment::seqnames(bsae)==., sample]
+    
+    alt_freq = as.vector(SummarizedExperiment::assays(chr_sample_subset)$AD / 
+                           SummarizedExperiment::assays(chr_sample_subset)$DP)
+    
+    # Assume alt_freq is already defined and is a vector of alternative allele frequencies
+    
+    # Step 1: Omit NAs and create a data frame to preserve original indices
+    na_free_alt_freq <- data.frame(
+      sample = sample,
+      seqnames = unique(SummarizedExperiment::seqnames(chr_sample_subset)),
+      pos = SummarizedExperiment::start(chr_sample_subset)[which(!is.na(alt_freq))],
+      alt_freq = as.vector(na.omit(alt_freq)),
+      orig_index = which(!is.na(alt_freq))
+    )
+    
+    # Step 2: Apply the rounding and filtering criteria
+    with_rounded_df = na_free_alt_freq %>%
+      mutate(
+        smoothed_alt_freq = case_when(
+          alt_freq < ref_freq_thres ~ 0,
+          alt_freq >= hetero_freq_thres[1] & alt_freq <= hetero_freq_thres[2] ~ 0.5,
+          alt_freq > alt_freq_thres ~ 1,
+          TRUE ~ NA_real_  # Assign NA to those that do not meet criteria
+        )
+      )
+    
+    na_omit_rounded_df = with_rounded_df %>%
+      filter(!is.na(smoothed_alt_freq))
+    
+    # step 3: label each point as noisy or not based on the smoothed value
+    noisy_flags <- sapply(1:length(na_omit_rounded_df$smoothed_alt_freq), function(i) {
+      is_noisy(na_omit_rounded_df$smoothed_alt_freq, i, neighborhood_size)
+      })
+    na_omit_rounded_df$noisy_flag = noisy_flags
+    
+    with_rounded_df %>%
+      left_join(na_omit_rounded_df %>% select(orig_index, noisy_flag),
+                by = 'orig_index') %>%
+      replace_na(list(noisy_flag = TRUE))
+  }) %>%
+    bind_rows() %>%
+    as_tibble()
+  
+}
+
+all_samples_df = map(bsae@colData$sample, extract_alt_freq_dataframe) %>%
+  bind_rows()
+
 ```
+
+```{r}
+plotting_df = all_samples_df %>%
+  filter(sample %in% bsae@colData$sample[1:10],
+         seqnames %in% seqnames(kn99_genome)[1:3])
+
+plotting_df %>%
+ggplot(aes(pos, alt_freq)) +
+  geom_point() +
+  facet_grid(sample ~ seqnames, scales = 'free_x')+
+  coord_cartesian(ylim = c(0,1))
+
+```
+
+```{r}
+plotting_df %>%
+ggplot(aes(pos, smoothed_alt_freq)) +
+  geom_point() +
+  facet_grid(sample ~ seqnames, scales='free_x') +
+  coord_cartesian(ylim = c(0,1))
+
+#bp = changepoint.np::cpt.np()
+```
+
+
+
+```{r}
+
+plotting_df %>%
+  filter(!noisy_flag,
+         sample == bsae@colData$sample[1],
+         seqnames == seqnames(kn99_genome)[1]) %>%
+ggplot(aes(pos, smoothed_alt_freq)) +
+  geom_point() +
+  facet_grid(sample ~ seqnames, scales = 'free_x')+
+  coord_cartesian(ylim = c(0,1))
+
+```
+
+```{r}
+plotting_df %>%
+  filter(!noisy_flag,
+         sample == bsae@colData$sample[1],
+         seqnames == seqnames(kn99_genome)[1]) %>%
+  pull(smoothed_alt_freq) %>%
+  changepoint.np::cpt.np()
+```
+
 
 
