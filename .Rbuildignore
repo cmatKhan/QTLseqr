@@ -4,3 +4,7 @@
 R/old_code
 temp
 plots
+^_pkgdown\.yml$
+^docs$
+^pkgdown$
+^\.github$

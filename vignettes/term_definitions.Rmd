@@ -2,7 +2,7 @@
 title: "Definition of Terms"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{term_definitions}
+  %\VignetteIndexEntry{Definition of Terms}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
