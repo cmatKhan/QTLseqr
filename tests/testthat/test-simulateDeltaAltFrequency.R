@@ -1,34 +1,34 @@
-test_that("simulateDeltaAltFrequency returns valid deltas", {
-  deltas <- simulateDeltaAltFrequency(
+test_that("simulateDeltaSnpIndex returns valid deltas", {
+  deltas <- simulateDeltaSnpIndex(
     depth = 10,
-    population_1_alt_frequency = 0.5,
-    population_2_alt_frequency = 0.6,
+    population_1_snp_index = 0.5,
+    population_2_snp_index = 0.6,
     replications = 100,
-    alt_frequency_filter = 0
+    snp_index_filter = 0
   )
 
   expect_true(is.numeric(deltas))
   expect_length(deltas, 100)
 
-  deltas_filtered <- simulateDeltaAltFrequency(
+  deltas_filtered <- simulateDeltaSnpIndex(
     depth = 10,
-    population_1_alt_frequency = 0.5,
-    population_2_alt_frequency = 0.6,
+    population_1_snp_index = 0.5,
+    population_2_snp_index = 0.6,
     replications = 100,
-    alt_frequency_filter = 0.55
+    snp_index_filter = 0.55
   )
 
   expect_true(length(deltas_filtered) < length(deltas))
 })
 
-test_that("simulateDeltaAltFrequencyCI returns correct structure", {
-  result <- simulateDeltaAltFrequencyCI(
+test_that("simulateDeltaSnpIndexCI returns correct structure", {
+  result <- simulateDeltaSnpIndexCI(
     population_1_n = 10,
     population_2_n = 10,
     population_structure = "F2",
     depth_vector = 1:10,
     replications = 100,
-    alt_frequency_filter = 0.3,
+    snp_index_filter = 0.3,
     ci_lower_bounds = c(0.05, 0.025)
   )
 

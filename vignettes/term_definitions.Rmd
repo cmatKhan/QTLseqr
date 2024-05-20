@@ -24,9 +24,9 @@ The terms below are derived from [Takagi et al. (2013)][takagi2013]
 
 | Traditional Term          | Term Used in This Package  | Description/Notes                                                                                      |
 |---------------------------|----------------------------|--------------------------------------------------------------------------------------------------------|
-| Bulk (Low, High)          | `population_1`, `population_2`         | population refers to a group of samples pooled together for sequencing. Enter `?createComparisonFrame` in your console for more details.                                   |
-| SNP-Index                 | `alt_frequency`     | The ratio of the number of reads containing the alternate allele to the total number of reads at a SNP.|
-| $\Delta$(SNP-Index)       | `delta_alt_frequency` | The difference in alt allele frequency between `population_2` and `population_1`, i.e. `population_2_alt_frequency - population_1_alt_frequency`                                |
+| Bulk (Low, High)          | `population_1`, `population_2`         | population refers to a group of samples pooled together for sequencing. See also $\Delta$(SNP-Index) below                                 |
+| SNP-Index                 | `snp_index`     | The ratio of the number of reads containing the alternate allele to the total number of reads at a SNP.|
+| $\Delta$(SNP-Index)       | `delta_snp_index` | The difference in alt allele frequency between `population_2` and `population_1`, i.e. `population_2_snp_index - population_1_snp_index`                                |
 
 [Takagi2013]: https://onlinelibrary.wiley.com/doi/10.1111/tpj.12105
 
@@ -36,8 +36,8 @@ The terms below are derived from [Magwene (2011)][magwene2011]
 
 | Traditional Term          | Term Used in This Package  | Description/Notes                                                                                      |
 |---------------------------|----------------------------|--------------------------------------------------------------------------------------------------------|
-| G          | G         | no change here -- I have no problem with this name                                   |
-| G'          | G smooth         | This will be some variation of `GSmooth` or `g_smooth` in the code. It is the result of local regression smoothing on the G metric |
+| G          | g         | lower case for consistency within code                                   |
+| G'          | g_smoothed         | This is the result of local regression smoothing on the G metric. `delta_snp_index_smoothed` is the equivalent metric calculated on `delta_snp_index` |
 
 [magwene2011]: https://doi.org/10.1371/journal.pcbi.1002255
 

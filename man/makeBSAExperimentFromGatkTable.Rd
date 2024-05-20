@@ -11,6 +11,53 @@ makeBSAExperimentFromGatkTable(
   metadata = list()
 )
 }
+\arguments{
+\item{gatk_table_path}{The path to the GATK table file.}
+
+\item{col_data_path}{Optional. If null, samplenames from the gatk table will
+be used to create a single column of metadata with the column name \code{sample}.
+However, additional sample metdata can be provided with this argument. If
+not \code{NULL}, this must be a character string specifying the path to the
+sample metadata. This must be a csv file with the extention \code{.csv}. The
+column \code{sample} must exist, and it must correspond to the sample names
+in the GATK \code{varianttotable} table.}
+
+\item{drop_samples}{A character vector of sample names to drop from the GATK
+table. Default is an empty character vector.}
+
+\item{metadata}{A list containing metadata for the BSAExperiment object.
+Recognized entries are \code{population_structure}, which may be 'F2' for an
+F2 population and 'RIL' for Recombinant Inbred Lines, \code{population_1_n}, which
+are the number of individuals in the 'low bulk' sample, and \code{population_2_n},
+which are the number of individuals in the 'high bulk' sample. If \code{population_2_n}
+is not provided, it is equal to \code{population_1_n} by default.}
+}
 \description{
-Create a BSAExperiment object from a GATK \code{varianttotable} Table
+This function reads a GATK \code{varianttotable} output table and a
+column data file to create a BSAExperiment object. The GATK
+\code{VariantsToTable} command should be used to generate the input table. See
+the GATK \code{varianttotable} documentation for details.
+}
+\details{
+To create the input table for this function, use the following GATK \code{VariantsToTable} command:
+\preformatted{
+
+gatk VariantsToTable \
+   -V input.vcf \
+   --split-multi-allelic \
+   -F CHROM -F POS -F REF -F ALT -F MULTI-ALLELIC -F TYPE -F QUAL \
+   -GF AD -GF DP -GF PL -GF GQ -GF GT \
+   -O output.table
+}
+}
+\examples{
+\dontrun{
+gatk_table_path <- "path/to/gatk_table.table"
+col_data_path <- "path/to/col_data.csv"
+drop_samples <- c("sample1", "sample2")
+metadata <- list(population_structure = 'RIL', population_1_n = 20)
+
+bsa_experiment <- makeBSAExperimentFromGatkTable(gatk_table_path, col_data_path, drop_samples, metadata)
+}
+
 }

@@ -11,7 +11,7 @@
 #'   The genomic coordinate of a allele
 #' @param stat A vector of statistics calculated from the alleles. This might be
 #'   the G statistic, see \code{\link{calculateGStatistic}} or
-#'   the alt_frequency from \code{\link{populationDepths}}, for example.
+#'   the snp_index from \code{\link{populationDepths}}, for example.
 #'   The order of this vector must correspond with the order of the
 #'   allele_row_ranges object.
 #' @param window_size the window size (in base pairs) bracketing each allele for which
@@ -56,8 +56,17 @@ smoothAlleleFrequencyMetric <- function(allele_row_ranges, stat, window_size = 2
       chrom_allele_positions <- start(alleles_in_chrom)
       chrom_allele_stat <- mcols(alleles_in_chrom)$allele_stat
 
-      chrom_mean <- locfit::lp(chrom_allele_positions, h = window_size, deg = 0)
-      smoothing_model <- locfit::locfit(chrom_allele_stat ~ chrom_mean, ...)
+      tryCatch({
+        chrom_mean <- locfit::lp(chrom_allele_positions, h = window_size, deg = 0)
+      }, error = function(e){
+        stop("Error in locfit::lp() -- ", e$message)
+      })
+
+      tryCatch({
+        smoothing_model <- locfit::locfit(chrom_allele_stat ~ chrom_mean, ...)
+      }, error = function(e) {
+        stop("Error in locfit::locfit() -- ", e$message)
+      })
       # Apply tricubeStat
       smoothed_values <- stats::predict(smoothing_model, chrom_allele_positions)
 

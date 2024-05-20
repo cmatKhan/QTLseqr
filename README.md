@@ -101,8 +101,8 @@ NGS-BSA data.
 library("QTLseqr")
 
 #Set sample and file names
-HighBulk <- "SRR834931"
-LowBulk <- "SRR834927"
+population_2 <- "SRR834931"
+population_1 <- "SRR834927"
 file <- "SNPs_from_GATK.table"
 
 #Choose which chromosomes will be included in the analysis (i.e. exclude smaller contigs)
@@ -112,8 +112,8 @@ Chroms <- paste0(rep("Chr", 12), 1:12)
 df <-
     importFromGATK(
         file = file,
-        highBulk = HighBulk,
-        lowBulk = LowBulk,
+        population_2 = population_2,
+        population_1 = population_1,
         chromList = Chroms
      )
 

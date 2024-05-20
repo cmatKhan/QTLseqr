@@ -1,7 +1,7 @@
-# simulateDeltaAltFrequencyCI handles invalid inputs
+# simulateDeltaSnpIndexCI handles invalid inputs
 
     Code
-      simulateDeltaAltFrequencyCI(population_1_n = 100, "RIL", depth_vector = 1:10,
+      simulateDeltaSnpIndexCI(population_1_n = 100, "RIL", depth_vector = 1:10,
       replications = 100)
     Output
               CI_05     CI_95     CI_025    CI_975 depth

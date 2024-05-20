@@ -10,25 +10,37 @@ vignette: >
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>"
+  comment = "#>",
+  eval = FALSE
 )
 ```
 
 ```{r setup}
 library(QTLseqr)
+library(S4Vectors)
 ```
 
-# Introduction
+# Basic Usage
 
-This data is derived from: Mapping of Quantitative Trait Loci Underlying Cold Tolerance in Rice Seedlings via High-Throughput Sequencing of Pooled Extremes. Yang Z, Huang D, Tang W, Zheng Y, Liang K, et al. (**2013**) PLOS ONE 8(7): e68433. <https://doi.org/10.1371/journal.pone.0068433>
+This data is derived from: Mapping of Quantitative Trait Loci Underlying
+Cold Tolerance in Rice Seedlings via High-Throughput Sequencing of Pooled
+Extremes. Yang Z, Huang D, Tang W, Zheng Y, Liang K, et al. (**2013**) PLOS ONE 8(7): e68433. <https://doi.org/10.1371/journal.pone.0068433>
 
-Raw reads were downloaded from the NCBI Short Read Archive, aligned to the v7 Nipponbare genome (<http://rice.plantbiology.msu.edu/>) and SNPs were called as described in the GATK “Best Practices” (<https://software.broadinstitute.org/gatk/best-practices/>).
+Raw reads were downloaded from the NCBI Short Read Archive,
+aligned to the [v7 Nipponbare genome](<http://rice.plantbiology.msu.edu/>) and
+SNPs were called as described in the
+[GATK Best Practices](https://software.broadinstitute.org/gatk/best-practices).
 
-*NOTE*: This data was downloaded from [here](https://github.com/bmansfeld/Yang2013data), but 
-then subsetted down to only `Chr1`, and 7 rows with multi-allelic depth information
-where removed. The columns `MULTI-ALLELIC = 'false'` AND `TYPE = 'snp'` were added. These
-are required for the `QTLseqr 2.0`, see `?makeBSAExperimentFromGatkTable`. I also
-removed record where the DP was 0 in either the low or high bulk.
+*NOTE*: This data was downloaded from [here](https://github.com/bmansfeld/Yang2013data),
+and subset to `Chr1`. Additionally, 7 rows with multi-allelic loci were removed, 
+as were loci where the DP (total depth) was 0 in either the low or high bulk.
+The columns `MULTI-ALLELIC = 'false'`, `TYPE = 'snp'` and `QUAL = 20e3` were added.
+These columns are required for the `QTLseqr 2.0`,
+see `?makeBSAExperimentFromGatkTable`. We now
+recommend using the [nf-core/sarek](https://nf-co.re/sarek) pipeline for
+variant calling, which is compliant with the GATK best practices.
+
+## Retrieve paths to the data
 
 ```{r}
 gatk_table_file <- system.file("extdata",
@@ -41,6 +53,7 @@ coldata_file <- system.file("extdata",
                           mustWork = TRUE)
 ```
 
+## Construct the BSAExperiment object
 
 ```{r}
 bsae = makeBSAExperimentFromGatkTable(
@@ -51,22 +64,47 @@ bsae = makeBSAExperimentFromGatkTable(
     population_2_n = 25,
     population_structure = "F2"))
 
-bsae@comparisons <- S4Vectors::DataFrame(population_1 = 'SRR834927',
+comparisons(bsae) <- S4Vectors::DataFrame(population_1 = 'SRR834927',
                                          population_2 = 'SRR834931')
 ```
 
+## Filter
+
 ```{r}
-bsae_results = createBSAResults(
-  comparison_index = 1L,
-  bsae = bsae,
-  filter_method = "alt_frequency",
-  window_size = 1e6,
-  delta_alt_frequency_filter = 0.1,
-  hampel_threshold_multiplier = 5.2
-)
+# create filters at the variant level
+ref_freq = rowSums(refDepth(bsae), na.rm = TRUE) / rowSums(totalDepth(bsae), na.rm = TRUE)
+ref_freq_mask = 0.2 <= ref_freq & ref_freq <= 0.8
+depth_mask = rowSums(totalDepth(bsae), na.rm = TRUE) > 100 & rowSums(totalDepth(bsae), na.rm = TRUE) < 400
+
+# add the variant level filter to the BSAExperiment object
+variantFilter(bsae) <- ref_freq_mask & depth_mask
+
+# Create a filter at the variant AND sample level and add this to the object
+# Note that samples can also be masked with `sampleFilter()`
+matrixFilter(bsae) <- assay(bsae, "GQ") >= 99 & assay(bsae, "DP") > 40
+
+# Once the filter vectors and matrix are added to the object, apply the filters
+# to create a filtered dataset
+filtered_bsae = applyFilter(bsae)
+
+```
+
+## Generate results
+
+```{r}
+bsae_results = createBSAResults(filtered_bsae, window_size=1e6)
 ```
 
 ```{r}
+library(tidyverse)
+library(here)
 
+rowRanges(bsae_results) %>%
+  as_tibble() %>%
+  bind_cols(as_tibble(assay(bsae_results, 1))) %>%
+  ggplot() +
+  geom_line(aes(start, delta_snp_index_smoothed)) +
+  geom_line(aes(start, CI_05)) +
+  geom_line(aes(start, CI_95))
 ```
 

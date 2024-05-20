@@ -12,7 +12,7 @@ The genomic coordinate of a allele}
 
 \item{stat}{A vector of statistics calculated from the alleles. This might be
 the G statistic, see \code{\link{calculateGStatistic}} or
-the alt_frequency from \code{\link{populationDepths}}, for example.
+the snp_index from \code{\link{populationDepths}}, for example.
 The order of this vector must correspond with the order of the
 allele_row_ranges object.}
 

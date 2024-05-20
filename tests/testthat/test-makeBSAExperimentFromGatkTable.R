@@ -44,7 +44,7 @@ test_that("test .read_in_gatk_table function", {
   # Check that 'table' is a data frame with the correct columns
   expect_s3_class(result$table, "data.frame")
   expect_equal(colnames(result$table),
-               c("CHROM", "POS", "REF", "ALT", "MULTI-ALLELIC", "TYPE",
+               c("CHROM", "POS", "REF", "ALT", "MULTI-ALLELIC", "TYPE", "QUAL",
                  paste("C8", c('AD', 'DP', 'PL', 'GQ', 'GT'), sep='.'),
                  paste("KN99a", c('AD', 'DP', 'PL', 'GQ', 'GT'), sep='.'),
                  paste("SLB0021", c('AD', 'DP', 'PL', 'GQ', 'GT'), sep='.'),

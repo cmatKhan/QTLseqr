@@ -1,3 +1,20 @@
+#' A class to store data related to bulk segregant analysis (BSA) experiments.
+#'
+#' BSAExperiment inherits from the \code{\link{RangedSummarizedExperiment}} class,
+#'   which is a subclass of the \code{\link{SummarizedExperiment}} class.
+#'
+#' The `BSAExperiment` class
+#'   adds a `comparisons` slot to the \code{\link{RangedSummarizedExperiment}}
+#'   slots, which is a `DataFrame` object that describes comparisons between
+#'   two populations.
+#'
+#' @slot comparisons A `DataFrame` object that describes comparisons between two
+#'   populations. The columns should be `population_1` and `population_2`, and
+#'   the levels of each should be a subset of the colData `sample` column.
+#'
+#' @seealso \code{\link{RangedSummarizedExperiment}},
+#'   \code{\link{SummarizedExperiment}}
+#'
 #' @export
 setClass(
   "BSAExperiment",
@@ -7,7 +24,19 @@ setClass(
   )
 )
 
+#' A constructor for the BSAExperiment class
+#'
+#' @param comparisons Optional. By default an empty DataFrame(). Otherwise,
+#'   a dataframe describing comparisons between two populations.
+#'   Must have two columns where the entries in each row are names of samples
+#'   in the `sample` column of the colData.
+#' @param ... Additional arguments passed to \code{\link{SummarizedExperiment}}
+#'
+#' @seealso \code{\link{SummarizedExperiment}}
+#'
 #' @import SummarizedExperiment
+#'
+#' @export
 BSAExperiment <- function(comparisons = DataFrame(), ...) {
 
   # Capture all additional arguments in a list
@@ -62,6 +91,18 @@ S4Vectors::setValidity2("BSAExperiment", function(object) {
     warning("`assays` is null", call. = FALSE)
   } else if(!all(c("DP", "AD") %in% names(object@assays))) {
     msg <- c(msg, "The assays must contain at minimum 'DP' and 'AD'")
+  } else{
+    # check that for each entry in AD and DP, DP is either NA or less than
+    # or equal to AD
+    total_depth = totalDepth(object)
+    alt_depth = altDepth(object)
+    if(!all(alt_depth <= total_depth
+            | (is.na(total_depth & is.na(alt_depth))))){
+      msg <- c(msg, paste0("For each entry in the totalDepth and ",
+                           "altDepth data matricies, totalDepth ",
+                           "must be either NA or less than or equal",
+                           "to altDepth"))
+    }
   }
 
   # Validate 'comparisons' DataFrame slot
@@ -75,11 +116,14 @@ S4Vectors::setValidity2("BSAExperiment", function(object) {
              "must be set in the metadata"))
   }
 
-  # validate that the names 'population_1_n', 'population_2_n' and 'population_structure'
-  # are in object@metadata
-  if(!all(c("population_1_n", "population_2_n", "population_structure") %in% names(object@metadata))){
+  # validate that the names 'population_1_n', 'population_2_n'
+  # and 'population_structure' are in object@metadata
+  if(!all(c("population_1_n", "population_2_n", "population_structure")
+          %in% names(object@metadata))){
     msg <- c(msg, paste0("The metadata is missing the following fields: ",
-             setdiff(c("population_1_n", "population_2_n", "population_structure"),
+             setdiff(c("population_1_n",
+                       "population_2_n",
+                       "population_structure"),
                      names(object@metadata))))
   }
 
@@ -113,50 +157,93 @@ S4Vectors::setValidity2("BSAExperiment", function(object) {
   } else msg
 })
 
+#' Store statistical results of BSA Analysis
+#'
+#' The `BSAResults` class is a subclass of the \code{\link{RangedSummarizedExperiment}}
+#'   class, which is a subclass of the \code{\link{SummarizedExperiment}} class.
+#'
+#' The `BSAResults` class is used to store the results of a BSA analysis.
+#'
+#' @seealso \code{\link{BSAExperiment}},
+#'   \code{\link{RangedSummarizedExperiment}}
+#'
 setClass(
   "BSAResults",
-  contains = "DFrame",
-  slots = c(
-    rowRanges = "GRanges",
-    analysisParams = "list"
-  )
+  contains = "RangedSummarizedExperiment",
 )
 
-BSAResults <- function(DataFrame = S4Vectors::DataFrame(),
-                          rowRanges = GenomicRanges::GRanges(),
-                          analysisParams = list()) {
-  # Create and return the BSAResults object with rowData
-  new("BSAResults",
-      DataFrame,
-      rowRanges = rowRanges,
-      analysisParams = analysisParams
-  )
+# Constructor for BSAResults
+BSAResults <- function(analysisParams = list(), ...) {
+  # Capture all additional arguments in a list
+  argsList <- list(...)
+
+  # Create the SummarizedExperiment object
+  se <- do.call("SummarizedExperiment", argsList)
+
+  # Now create the BSAExperiment object, setting comparisons directly
+  new("BSAResults", se)
 }
 
+# Validity check for BSAResults
 S4Vectors::setValidity2("BSAResults", function(object) {
   msg <- NULL
 
-  # Validate 'rowData' slot
-  if (!inherits(object@rowRanges, "GRanges")) {
-    msg <- c(msg, "'rowData' slot must be a GRanges object.")
-  }
-
-  # Validate 'analysisParams' slot
-  if (!is.list(object@analysisParams)) {
-    msg <- c(msg, "'analysisParams' slot must be a list.")
-  }
-
-  # Validate 'DFrame' slot
-  if (!inherits(object, "DataFrame")) {
-    msg <- c(msg, "'DataFrame' slot must be a DataFrame.")
-  }
-
   if (is.null(msg)) {
     TRUE
-  } else msg
+  } else {
+    msg
+  }
 })
 
+
+# setClass(
+#   "BSAResults",
+#   contains = "DFrame",
+#   slots = c(
+#     rowRanges = "GRanges",
+#     analysisParams = "list"
+#   )
+# )
+#
+# BSAResults <- function(DataFrame = S4Vectors::DataFrame(),
+#                           rowRanges = GenomicRanges::GRanges(),
+#                           analysisParams = list()) {
+#   # Create and return the BSAResults object with rowData
+#   new("BSAResults",
+#       DataFrame,
+#       rowRanges = rowRanges,
+#       analysisParams = analysisParams
+#   )
+# }
+#
+# S4Vectors::setValidity2("BSAResults", function(object) {
+#   msg <- NULL
+#
+#   # Validate 'rowData' slot
+#   if (!inherits(object@rowRanges, "GRanges")) {
+#     msg <- c(msg, "'rowData' slot must be a GRanges object.")
+#   }
+#
+#   # Validate 'analysisParams' slot
+#   if (!is.list(object@analysisParams)) {
+#     msg <- c(msg, "'analysisParams' slot must be a list.")
+#   }
+#
+#   # Validate 'DFrame' slot
+#   if (!inherits(object, "DataFrame")) {
+#     msg <- c(msg, "'DataFrame' slot must be a DataFrame.")
+#   }
+#
+#   if (is.null(msg)) {
+#     TRUE
+#   } else msg
+# })
+
 #' Population Depth List Object Constructor
+#'
+#' @param depth_list A list with two elements, `population_1` and `population_2`.
+#'   Each of these elements should be a list with two elements, `ref` and `alt`.
+#'
 #' @export
 createPopulationDepthList <- function(depth_list) {
   # Validate that the input is a list

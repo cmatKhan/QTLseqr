@@ -1,5 +1,37 @@
-#'
 #' Create a BSAExperiment object from a GATK `varianttotable` Table
+#'
+#' This function reads a GATK `varianttotable` output table and a
+#'   column data file to create a BSAExperiment object. The GATK
+#'   `VariantsToTable` command should be used to generate the input table. See
+#'   the GATK `varianttotable` documentation for details.
+#'
+#' @inheritParams .read_in_gatk_table
+#'
+#' @param col_data_path Optional. If null, samplenames from the gatk table will
+#'   be used to create a single column of metadata with the column name `sample`.
+#'   However, additional sample metdata can be provided with this argument. If
+#'   not `NULL`, this must be a character string specifying the path to the
+#'   sample metadata. This must be a csv file with the extention `.csv`. The
+#'   column `sample` must exist, and it must correspond to the sample names
+#'   in the GATK `varianttotable` table.
+#' @param metadata A list containing metadata for the BSAExperiment object.
+#'   Recognized entries are `population_structure`, which may be 'F2' for an
+#'   F2 population and 'RIL' for Recombinant Inbred Lines, `population_1_n`, which
+#'   are the number of individuals in the 'low bulk' sample, and `population_2_n`,
+#'   which are the number of individuals in the 'high bulk' sample. If `population_2_n`
+#'   is not provided, it is equal to `population_1_n` by default.
+#'
+#' @details
+#' To create the input table for this function, use the following GATK `VariantsToTable` command:
+#' \preformatted{
+#'
+#' gatk VariantsToTable \
+#'    -V input.vcf \
+#'    --split-multi-allelic \
+#'    -F CHROM -F POS -F REF -F ALT -F MULTI-ALLELIC -F TYPE -F QUAL \
+#'    -GF AD -GF DP -GF PL -GF GQ -GF GT \
+#'    -O output.table
+#' }
 #'
 #' @importFrom GenomicRanges GRanges
 #' @importFrom IRanges IRanges
@@ -7,7 +39,24 @@
 #' @importFrom readr read_csv
 #' @importFrom dplyr filter tibble left_join
 #'
+#' @examples
+#' \dontrun{
+#' gatk_table_path <- "path/to/gatk_table.table"
+#' col_data_path <- "path/to/col_data.csv"
+#' drop_samples <- c("sample1", "sample2")
+#' metadata <- list(population_structure = 'RIL', population_1_n = 20)
+#'
+#' bsa_experiment <- makeBSAExperimentFromGatkTable(gatk_table_path, col_data_path, drop_samples, metadata)
+#' }
+#'
 #' @export
+makeBSAExperimentFromGatkTable <- function(gatk_table_path,
+                                           col_data_path = NULL,
+                                           drop_samples = c(),
+                                           metadata = list()) {
+  # Function implementation
+}
+
 makeBSAExperimentFromGatkTable <- function(gatk_table_path,
                                            col_data_path,
                                            drop_samples = c(),
@@ -157,9 +206,9 @@ makeBSAExperimentFromGatkTable <- function(gatk_table_path,
 
   # ensure that the following columns are present in the GATK table:
   # CHROM, POS, REF, ALT, MULTI-ALLELIC TYPE
-  if(!all(c("CHROM", "POS", "REF", "ALT", "MULTI-ALLELIC", "TYPE") %in% colnames(gatk_table))){
+  if(!all(c("CHROM", "POS", "REF", "ALT", "MULTI-ALLELIC", "TYPE", "QUAL") %in% colnames(gatk_table))){
     stop(paste0("The GATK table does not contain the required columns: ",
-                "CHROM, POS, REF, ALT, MULTI-ALLELIC, TYPE. ",
+                "CHROM, POS, REF, ALT, MULTI-ALLELIC, TYPE, QUAL. ",
                 "See ?makeBSAExperimentFromgatk_table for more information."))
   }
 

@@ -1,12 +1,12 @@
-test_that("simulatePopulationAltFrequency returns valid frequencies", {
-  freq <- simulatePopulationAltFrequency(50, "F2")
+test_that("simulatePopulationSnpIndex returns valid frequencies", {
+  freq <- simulatePopulationSnpIndex(50, "F2")
   expect_true(freq >= 0 && freq <= 1)
 
-  freq <- simulatePopulationAltFrequency(50, "RIL")
+  freq <- simulatePopulationSnpIndex(50, "RIL")
   expect_true(freq >= 0 && freq <= 1)
 })
 
-test_that("simulatePopulationAltFrequency handles invalid inputs", {
-  expect_error(simulatePopulationAltFrequency(0, "F2"))
-  expect_error(simulatePopulationAltFrequency(-10, "RIL"))
+test_that("simulatePopulationSnpIndex handles invalid inputs", {
+  expect_error(simulatePopulationSnpIndex(0, "F2"))
+  expect_error(simulatePopulationSnpIndex(-10, "RIL"))
 })

@@ -6,6 +6,10 @@
 \usage{
 createPopulationDepthList(depth_list)
 }
+\arguments{
+\item{depth_list}{A list with two elements, \code{population_1} and \code{population_2}.
+Each of these elements should be a list with two elements, \code{ref} and \code{alt}.}
+}
 \description{
 Population Depth List Object Constructor
 }

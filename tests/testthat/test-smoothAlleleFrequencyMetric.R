@@ -1,9 +1,9 @@
 test_that("smoothAlleleFrequencyMetric works on delta SNP metric", {
   bsae = bsae_obj_fixture(add_comparisons=TRUE)
 
-  delta_alt_frequency = deltaAltFrequency(bsae, bsae@comparisons[1,1], bsae@comparisons[1,2])
+  delta_snp_index = deltaSnpIndex(bsae, bsae@comparisons[1,1], bsae@comparisons[1,2])
 
-  smoothed_stats = smoothAlleleFrequencyMetric(rowRanges(bsae), delta_alt_frequency, window_size = 5000)
+  smoothed_stats = smoothAlleleFrequencyMetric(rowRanges(bsae), delta_snp_index, window_size = 5000)
 
   expect_snapshot(smoothed_stats)
 })

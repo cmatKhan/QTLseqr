@@ -2,26 +2,34 @@
 % Please edit documentation in R/createBSAResults.R
 \name{createBSAResults}
 \alias{createBSAResults}
-\title{Briefly, using the natural log of Gprime a median absolute deviation (MAD)
-is calculated. The Gprime set is trimmed to exclude outlier regions
-(i.e. QTL) based on Hampel's rule. An alternate method for filtering out
-QTL is proposed using absolute delta SNP indeces greater than
-a set threshold to filter out potential QTL. An estimation of the mode of the trimmed set}
+\title{Calculate marker frequency statistics for a objectxperiment object}
 \usage{
 createBSAResults(
-  comparison_index,
-  bsae,
-  filter_method,
-  window_size = 1e+06,
-  delta_alt_frequency_filter = 0.1,
-  hampel_threshold_multiplier = 5.2,
+  object,
+  comparison_index = NULL,
+  statistics = c("delta_snp_index", "g"),
   ...
 )
 }
+\arguments{
+\item{object}{A BSAExperiment object}
+
+\item{comparison_index}{a single integer value indicating the row of
+comparisons(object) to utilize for the statistical comparison, or
+a vector of integers indicating multiple comparisons to calculate}
+
+\item{statistics}{A character vector indicating which statistics to calculate.
+Currently 'delta_snp_index' and 'g' are valid choices}
+
+\item{...}{
+  Arguments passed on to \code{\link[=smoothAlleleFrequencyMetric]{smoothAlleleFrequencyMetric}}, \code{\link[=g_statistics_results]{g_statistics_results}}
+  \describe{
+    \item{\code{window_size}}{the window size (in base pairs) bracketing each allele for which
+to calculate the statitics. Magwene et. al recommend a window size of ~25
+cM, but also recommend optionally trying several window sizes to test if
+peaks are over- or undersmoothed.}
+  }}
+}
 \description{
-Briefly, using the natural log of Gprime a median absolute deviation (MAD)
-is calculated. The Gprime set is trimmed to exclude outlier regions
-(i.e. QTL) based on Hampel's rule. An alternate method for filtering out
-QTL is proposed using absolute delta SNP indeces greater than
-a set threshold to filter out potential QTL. An estimation of the mode of the trimmed set
+Calculate marker frequency statistics for a objectxperiment object
 }
